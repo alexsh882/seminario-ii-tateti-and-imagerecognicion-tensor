@@ -14,20 +14,22 @@
     <p>Vos jugás con las X</p>
     <div class="row gap-2">
       <div>
-        <button id="0" class="btn btn-outline-primary">-</button>
-        <button id="1" class="btn btn-outline-primary">-</button>
-        <button id="2" class="btn btn-outline-primary">-</button>
+        <button id="0" class="m-2 btn btn-outline-primary"></button>
+        <button id="1" class="m-2 btn btn-outline-primary"></button>
+        <button id="2" class="m-2 btn btn-outline-primary"></button>
       </div>
       <div>
-        <button id="3" class="btn btn-outline-primary">-</button>
-        <button id="4" class="btn btn-outline-primary">-</button>
-        <button id="5" class="btn btn-outline-primary">-</button>
+        <button id="3" class="m-2 btn btn-outline-primary"></button>
+        <button id="4" class="m-2 btn btn-outline-primary"></button>
+        <button id="5" class="m-2 btn btn-outline-primary"></button>
       </div>
       <div>
-        <button id="6" class="btn btn-outline-primary">-</button>
-        <button id="7" class="btn btn-outline-primary">-</button>
-        <button id="8" class="btn btn-outline-primary">-</button>
+        <button id="6" class="m-2 btn btn-outline-primary"></button>
+        <button id="7" class="m-2 btn btn-outline-primary"></button>
+        <button id="8" class="m-2 btn btn-outline-primary"></button>
       </div>
+      <p id="turn">Empezá colocando la primera X.</p>
+      <span id="new-play"  class="text-primary btn visually-hidden" onclick="newPlay()">Jugar de nuevo</>
     </div>
 
     <script>
@@ -38,16 +40,53 @@
       const jugada = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
       const buttons = document.querySelectorAll("button");
+      const newPlayButton = document.getElementById("new-play");
+
+
+      const turn = document.getElementById("turn");
 
       buttons.forEach((button) => {
         button.addEventListener("click", (e) => {
-          const button = e.target;
-          jugada[button.id] = 1;
-          button.textContent = "X";
-          console.log(jugada);
-          playOfModel();
+          myPlay(e);
         });
       });
+
+      function myPlay(e) {
+        const button = e.target;
+        jugada[button.id] = 1;
+        button.textContent = "X";
+
+        const winMatch = winBoard(jugada);
+
+        buttons.forEach((button) => button.disabled = true);
+        
+        if (winMatch) {
+          alertWinOrLose(winMatch);
+        } else {
+          turn.textContent = "Turno de la máquina.";
+          setTimeout(() => {
+            playOfModel();
+          }, 1000);
+        }
+      }
+
+      function alertWinOrLose(winMatch) {
+        if (winMatch === null) return turn.textContent = "Tu turno.";
+        turn.textContent =
+          winMatch === 1
+            ? "Ganaste"
+            : "Perdiste el juego, podes jugar de nuevo.";
+        newPlayButton.classList.remove("visually-hidden");
+       
+      }
+      
+      function newPlay(){
+        jugada.fill(0);
+        buttons.forEach((button) => {
+          button.textContent = "-";
+          button.disabled = false;
+        });
+      }
 
       function playOfModel() {
         tf.ready().then(() => {
@@ -63,25 +102,28 @@
               // Log the results
               result.print();
 
-              const winMatch = winBoard(jugada);
-
-              if (winMatch) {
-                alert(winMatch === 1 ? "Ganaste" : "Perdiste");
-                jugada.fill(0);
-                buttons.forEach((button) => {
-                  button.textContent = "-";
-                  play.dispose();
-                  matches.dispose();
-                });
-              } else {
-                result.data().then((data) => {
-                  const dataArr = Array.from(data);
-                  const max = Math.max(...dataArr);
-                  const index = dataArr.indexOf(max);
+              result.data().then((data) => {
+                const dataArr = Array.from(data);
+                const max = Math.max(...dataArr);
+                const index = dataArr.indexOf(max);
+                if (jugada[index] === 0) {
                   jugada[index] = -1;
                   buttons[index].textContent = "O";
-                });
-              }
+                } else {
+                  const emptyIndex = jugada.indexOf(0);
+                  if (emptyIndex === -1) {
+                    turn.textContent = "Empate";
+                       play.dispose();
+                      matches.dispose();
+                  } else {
+                    jugada[emptyIndex] = -1;
+                    buttons[emptyIndex].textContent = "O";
+                  }
+                }
+                const winMatch = winBoard(jugada);
+                alertWinOrLose(winMatch);
+                buttons.forEach((button) => button.disabled = false);
+              });
             });
           });
         });
